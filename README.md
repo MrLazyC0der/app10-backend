@@ -3,11 +3,7 @@
 > **Built with:** Node.js · Express.js · MongoDB Native Driver  
 > **Architecture:** Layered (Routes → Controllers → Services → DB)
 
----
 
-## 🌐 Language / اللغة
-- [🇬🇧 English](#english)
-- [🇪🇬 العربية](#arabic)
 
 ---
 
