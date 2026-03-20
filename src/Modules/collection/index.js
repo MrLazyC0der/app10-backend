@@ -1,0 +1,1 @@
+export { default as collectionRoute } from "./collection.controller.js";

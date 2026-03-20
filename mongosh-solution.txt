@@ -1,0 +1,110 @@
+// ══════════════════════════════════════════════════════════════════
+//  Assignment 8 — MongoDB Shell Solutions
+// ══════════════════════════════════════════════════════════════════
+use assignment8
+
+// ─── 1. Create explicit "books" collection with validation ────────
+db.createCollection("books", {
+  validator: {
+    $jsonSchema: {
+      bsonType: "object",
+      required: ["title"],
+      properties: {
+        title:  { bsonType: "string", minLength: 1 },
+        author: { bsonType: "string" },
+        year:   { bsonType: "int" },
+        genres: { bsonType: "array", items: { bsonType: "string" } }
+      }
+    }
+  }
+})
+
+// ─── 2. Create implicit "authors" collection ──────────────────────
+db.authors.insertOne({ name: "Author1", nationality: "British" })
+
+// ─── 3. Create capped "logs" collection (1MB) ─────────────────────
+db.createCollection("logs", { capped: true, size: 1048576 })
+
+// ─── 4. Create index on books.title ──────────────────────────────
+db.books.createIndex({ title: 1 })
+
+// ─── 5. Insert one book ───────────────────────────────────────────
+db.books.insertOne({
+  title: "Book1", author: "Ali", year: NumberInt(1937),
+  genres: ["Fantasy", "Adventure"]
+})
+
+// ─── 6. Insert multiple books ────────────────────────────────────
+db.books.insertMany([
+  { title: "Future",                author: "George Orwell",      year: NumberInt(2028), genres: ["Science Fiction"] },
+  { title: "To Kill a Mockingbird", author: "Harper Lee",         year: NumberInt(1960), genres: ["Classic", "Fiction"] },
+  { title: "Brave New World",       author: "Aldous Huxley",      year: NumberInt(2006), genres: ["Dystopian", "Science Fiction"] },
+  { title: "The Road",              author: "Cormac McCarthy",    year: NumberInt(2006), genres: ["Drama"] },
+  { title: "The Kite Runner",       author: "Khaled Hosseini",    year: NumberInt(2003), genres: ["Drama"] },
+  { title: "The Great Gatsby",      author: "F. Scott Fitzgerald",year: NumberInt(1925), genres: ["Classic", "Fiction"] }
+])
+
+// ─── 7. Insert a log ─────────────────────────────────────────────
+db.logs.insertOne({ book_id: ObjectId(), action: "borrowed" })
+
+// ─── 8. Update "Future" → year 2022 ──────────────────────────────
+db.books.updateOne({ title: "Future" }, { $set: { year: NumberInt(2022) } })
+
+// ─── 9. Find by title ────────────────────────────────────────────
+db.books.findOne({ title: "Brave New World" })
+
+// ─── 10. Find between years ──────────────────────────────────────
+db.books.find({ year: { $gte: 1990, $lte: 2010 } }).toArray()
+
+// ─── 11. Find by genre ───────────────────────────────────────────
+db.books.find({ genres: "Science Fiction" }).toArray()
+
+// ─── 12. Skip 2, limit 3, sort year desc ─────────────────────────
+db.books.find({}).sort({ year: -1 }).skip(2).limit(3).toArray()
+
+// ─── 13. Find where year is stored as int ────────────────────────
+db.books.find({ year: { $type: "int" } }).toArray()
+
+// ─── 14. Exclude Horror and Science Fiction ───────────────────────
+db.books.find({ genres: { $nin: ["Horror", "Science Fiction"] } }).toArray()
+
+// ─── 15. Delete books before year 2000 ───────────────────────────
+db.books.deleteMany({ year: { $lt: 2000 } })
+
+// ─── 16. Aggregate: $match + $sort ───────────────────────────────
+db.books.aggregate([
+  { $match: { year: { $gt: 2000 } } },
+  { $sort:  { year: -1 } }
+]).toArray()
+
+// ─── 17. Aggregate: $match + $project ────────────────────────────
+db.books.aggregate([
+  { $match:   { year: { $gt: 2000 } } },
+  { $project: { _id: 0, title: 1, author: 1, year: 1 } }
+]).toArray()
+
+// ─── 18. Aggregate: $unwind genres ───────────────────────────────
+db.books.aggregate([
+  { $unwind:  "$genres" },
+  { $project: { _id: 0, title: 1, genres: 1 } }
+]).toArray()
+
+// ─── 19. Aggregate: $lookup books ← logs ─────────────────────────
+db.logs.aggregate([
+  {
+    $lookup: {
+      from:         "books",
+      localField:   "book_id",
+      foreignField: "_id",
+      as:           "book_details"
+    }
+  },
+  {
+    $project: {
+      _id: 0, action: 1,
+      "book_details.title":  1,
+      "book_details.author": 1,
+      "book_details.year":   1
+    }
+  }
+]).toArray()
