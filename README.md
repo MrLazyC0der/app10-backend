@@ -91,10 +91,10 @@ NODE_ENV=development
 ### 3. Run the Server
 ```bash
 # Development
-npm run dev
+npm run start:dev
 
 # Production
-npm start
+npm run start:pro 
 ```
 
 ---
